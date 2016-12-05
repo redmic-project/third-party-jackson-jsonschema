@@ -5,7 +5,7 @@ import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 import java.util
 import java.util.Optional
 import javax.validation.constraints.{Max, Min, NotNull, Pattern, Size}
-
+import scala.collection.JavaConverters._
 import com.fasterxml.jackson.annotation.{JsonPropertyDescription, JsonSubTypes, JsonTypeInfo}
 import com.fasterxml.jackson.core.JsonParser.NumberType
 import com.fasterxml.jackson.databind.jsonFormatVisitors._
@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.introspect.{AnnotatedClass, JacksonAnnotationIntrospector}
 import com.fasterxml.jackson.databind.node.{ArrayNode, JsonNodeFactory, ObjectNode}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaDefault, JsonSchemaDescription, JsonSchemaFormat, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaDefault, JsonSchemaDescription, JsonSchemaFormat, JsonSchemaTitle, JsonSchemaUrl}
 import org.slf4j.LoggerFactory
 
 object JsonSchemaGenerator {
@@ -40,7 +40,7 @@ object JsonSchemaConfig {
     *
     * autoGenerateTitleForProperties - If property is named "someName", we will add {"title": "Some Name"}
     * defaultArrayFormat - this will result in a better gui than te default one.
-
+    *
     */
   val html5EnabledSchema = JsonSchemaConfig(
     autoGenerateTitleForProperties = true,
@@ -51,7 +51,7 @@ object JsonSchemaConfig {
     disableWarnings = false,
     useMinLengthForNotNull = true,
     useTypeIdForDefinitionName = false,
-    customType2FormatMapping = Map[String,String](
+    customType2FormatMapping = Map[String, String](
       // Java7 dates
       "java.time.LocalDateTime" -> "datetime-local",
       "java.time.OffsetDateTime" -> "datetime",
@@ -64,16 +64,16 @@ object JsonSchemaConfig {
 
   // Java-API
   def create(
-              autoGenerateTitleForProperties:Boolean,
-              defaultArrayFormat:Optional[String],
-              useOneOfForOption:Boolean,
-              usePropertyOrdering:Boolean,
-              hidePolymorphismTypeProperty:Boolean,
-              disableWarnings:Boolean,
-              useMinLengthForNotNull:Boolean,
-              useTypeIdForDefinitionName:Boolean,
-              customType2FormatMapping:java.util.Map[String, String]
-            ):JsonSchemaConfig = {
+              autoGenerateTitleForProperties: Boolean,
+              defaultArrayFormat: Optional[String],
+              useOneOfForOption: Boolean,
+              usePropertyOrdering: Boolean,
+              hidePolymorphismTypeProperty: Boolean,
+              disableWarnings: Boolean,
+              useMinLengthForNotNull: Boolean,
+              useTypeIdForDefinitionName: Boolean,
+              customType2FormatMapping: java.util.Map[String, String]
+            ): JsonSchemaConfig = {
 
     import scala.collection.JavaConverters._
 
@@ -89,22 +89,44 @@ object JsonSchemaConfig {
       customType2FormatMapping.asScala.toMap
     )
   }
-
 }
+  case class JsonSchemaConfig
+  (
+    autoGenerateTitleForProperties:Boolean,
+    defaultArrayFormat:Option[String],
+    useOneOfForOption:Boolean,
+    usePropertyOrdering:Boolean,
+    hidePolymorphismTypeProperty:Boolean,
+    disableWarnings:Boolean,
+    useMinLengthForNotNull:Boolean,
+    useTypeIdForDefinitionName:Boolean,
+    customType2FormatMapping:Map[String, String]
+  )
 
-case class JsonSchemaConfig
-(
-  autoGenerateTitleForProperties:Boolean,
-  defaultArrayFormat:Option[String],
-  useOneOfForOption:Boolean,
-  usePropertyOrdering:Boolean,
-  hidePolymorphismTypeProperty:Boolean,
-  disableWarnings:Boolean,
-  useMinLengthForNotNull:Boolean,
-  useTypeIdForDefinitionName:Boolean,
-  customType2FormatMapping:Map[String, String]
-)
 
+
+  object JsonSchemaResources {
+
+    val defaultResources = JsonSchemaResources(
+      properties = Map()
+    )
+
+    def setResources(
+                      properties: java.util.Map[String, Object]
+                    ): JsonSchemaResources = {
+
+      import scala.collection.JavaConverters._
+
+      JsonSchemaResources(
+        properties.asScala.mapValues(_.toString).toMap
+      )
+    }
+  }
+
+  case class JsonSchemaResources
+  (
+    properties:Map[String, String]
+  )
 
 
 /**
@@ -112,21 +134,26 @@ case class JsonSchemaConfig
   * @param rootObjectMapper pre-configured ObjectMapper
   * @param debug Default = false - set to true if generator should log some debug info while generating the schema
   * @param config default = vanillaJsonSchemaDraft4. Please use html5EnabledSchema if generating HTML5 GUI, e.g. using https://github.com/jdorn/json-editor
+  * @param resources Set if use url label
   */
 class JsonSchemaGenerator
 (
   val rootObjectMapper: ObjectMapper,
+  resources:JsonSchemaResources = JsonSchemaResources.defaultResources,
   debug:Boolean = false,
   config:JsonSchemaConfig = JsonSchemaConfig.vanillaJsonSchemaDraft4
 ) {
 
   // Java API
-  def this(rootObjectMapper: ObjectMapper) = this(rootObjectMapper, false, JsonSchemaConfig.vanillaJsonSchemaDraft4)
+  def this(rootObjectMapper: ObjectMapper) = this(rootObjectMapper, JsonSchemaResources.defaultResources, false, JsonSchemaConfig.vanillaJsonSchemaDraft4)
 
   // Java API
-  def this(rootObjectMapper: ObjectMapper, config:JsonSchemaConfig) = this(rootObjectMapper, false, config)
+  def this(rootObjectMapper: ObjectMapper, config:JsonSchemaConfig) = this(rootObjectMapper, JsonSchemaResources.defaultResources, false, config)
 
-  import scala.collection.JavaConverters._
+  // Java API
+  def this(rootObjectMapper: ObjectMapper, resources: JsonSchemaResources) = this(rootObjectMapper, resources, false, JsonSchemaConfig.vanillaJsonSchemaDraft4)
+
+
 
   val log = LoggerFactory.getLogger(getClass)
 
@@ -173,6 +200,7 @@ class JsonSchemaGenerator
 
   // Class that manages creating new defenitions or getting $refs to existing definitions
   class DefinitionsHandler() {
+
     private var class2Ref = Map[Class[_], String]()
     private val definitionsNode = JsonNodeFactory.instance.objectNode()
 
@@ -244,6 +272,7 @@ class JsonSchemaGenerator
     val definitionsHandler:DefinitionsHandler,
     currentProperty:Option[BeanProperty] // This property may represent the BeanProperty when we're directly processing beneath the property
   ) extends JsonFormatVisitorWrapper with MySerializerProvider {
+
 
     def l(s: => String): Unit = {
       if (!debug) return
@@ -528,25 +557,23 @@ class JsonSchemaGenerator
           subType: Class[_] =>
             l(s"polymorphism - subType: $subType")
 
-            val definitionInfo: DefinitionInfo = definitionsHandler.getOrCreateDefinition(subType){
-              objectNode =>
+              val definitionInfo: DefinitionInfo = definitionsHandler.getOrCreateDefinition(subType) {
+                objectNode =>
 
-                val childVisitor = createChild(objectNode, currentProperty = None)
-                objectMapper.acceptJsonFormatVisitor(subType, childVisitor)
+                  val childVisitor = createChild(objectNode, currentProperty = None)
+                  objectMapper.acceptJsonFormatVisitor(subType, childVisitor)
 
-                None
-            }
+                  None
+              }
 
             val thisOneOfNode = JsonNodeFactory.instance.objectNode()
             thisOneOfNode.put("$ref", definitionInfo.ref.get)
             anyOfArrayNode.add(thisOneOfNode)
-
         }
 
         null // Returning null to stop jackson from visiting this object since we have done it manually
 
       } else {
-
 
         val objectBuilder:ObjectNode => Option[JsonObjectFormatVisitor] = {
           thisObjectNode:ObjectNode =>
@@ -735,6 +762,19 @@ class JsonSchemaGenerator
                       thisPropertyNode.meta.put("title", title)
                   }
 
+
+                // Optionally add url
+                prop.flatMap {
+                  p: BeanProperty =>
+                    Option(p.getAnnotation(classOf[JsonSchemaUrl])).map(_.value())
+                }.map {
+                  url =>
+                    thisPropertyNode.meta.put("type", "integer")
+                    thisPropertyNode.meta.put("url", resources.properties.get(url).getOrElse("none"))
+                    thisPropertyNode.meta.remove("$ref")
+                    definitionsHandler.getFinalDefinitionsNode().get.remove(propertyType.getRawClass.getSimpleName)
+                }
+
               }
 
               override def optionalProperty(prop: BeanProperty): Unit = {
@@ -759,21 +799,21 @@ class JsonSchemaGenerator
             })
         }
 
-        if ( level == 0) {
+
+        if ( level == 0 ) {
           // This is the first level - we must not use definitions
           objectBuilder(node).orNull
         } else {
-          val definitionInfo: DefinitionInfo = definitionsHandler.getOrCreateDefinition(_type.getRawClass)(objectBuilder)
+            val definitionInfo: DefinitionInfo = definitionsHandler.getOrCreateDefinition(_type.getRawClass)(objectBuilder)
 
-          definitionInfo.ref.foreach {
-            r =>
-              // Must add ref to def at "this location"
-              node.put("$ref", r)
-          }
+            definitionInfo.ref.foreach {
+              r =>
+                // Must add ref to def at "this location"
+                node.put("$ref", r)
+            }
 
-          definitionInfo.jsonObjectFormatVisitor.orNull
+            definitionInfo.jsonObjectFormatVisitor.orNull
         }
-
       }
 
     }
@@ -871,7 +911,6 @@ class JsonSchemaGenerator
         rootNode.put("description", d)
         // If root class is annotated with @JsonSchemaDescription, it will later override this description
     }
-
 
     val definitionsHandler = new DefinitionsHandler
     val rootVisitor = new MyJsonFormatVisitorWrapper(rootObjectMapper, node = rootNode, definitionsHandler = definitionsHandler, currentProperty = None)

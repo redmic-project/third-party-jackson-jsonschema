@@ -1,6 +1,6 @@
 
 lazy val commonSettings = Seq(
-  organization := "com.kjetland",
+  organization := "es.redmic.kjetland",
   organizationName := "mbknor",
   version := "1.0.11-SNAPSHOT",
   scalaVersion := "2.12.0",
@@ -15,7 +15,7 @@ lazy val commonSettings = Seq(
 //    else
 //      Some("releases"  at nexus + "thirdparty/")
 //  },
-  publishTo := {
+  /*publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (isSnapshot.value)
       Some("snapshots" at nexus + "content/repositories/snapshots")
@@ -25,7 +25,8 @@ lazy val commonSettings = Seq(
   credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
   homepage := Some(url("https://github.com/mbknor/mbknor-jackson-jsonSchema")),
   licenses := Seq("MIT" -> url("https://github.com/mbknor/mbknor-jackson-jsonSchema/blob/master/LICENSE.txt")),
-  startYear := Some(2016),
+  startYear := Some(2016),*/
+  publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository"))),
   pomExtra := (
       <scm>
         <url>git@github.com:mbknor/mbknor-jackson-jsonSchema.git</url>

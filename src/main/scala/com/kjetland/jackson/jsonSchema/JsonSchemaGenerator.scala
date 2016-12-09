@@ -507,7 +507,6 @@ class JsonSchemaGenerator
       }
     }
 
-
     private def getRequiredArrayNode(objectNode:ObjectNode):ArrayNode = {
       Option(objectNode.get("required")).map(_.asInstanceOf[ArrayNode]).getOrElse {
         val rn = JsonNodeFactory.instance.arrayNode()

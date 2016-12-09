@@ -61,14 +61,7 @@ class JsonSchemaGeneratorTest extends FunSuite with Matchers {
   val jsonSchemaGeneratorWithIds = new JsonSchemaGenerator(_objectMapperScala, null, debug = true, vanillaJsonSchemaDraft4WithIds)
 
   val properties = new util.HashMap[String, Object]();
-  properties.put("ACTIVITYBASE", "/operator/activities/");
   properties.put("ACCESSIBILITY", "/operator/accessibilities/");
-  properties.put("SCOPE", "/operator/scopes/");
-  properties.put("ACTIVITYTYPE", "/operator/activitytypes");
-  properties.put("ACTIVITYDOCUMENT", "/operator/documents/");
-  properties.put("ACTIVITYPLATFORMROLE", "/operator/contactroles/");
-  properties.put("CONTACTORGANISATIONROLE", "/operator/contactroles/");
-  properties.put("ORGANISATIONROLE", "/operator/organisationroles/");
 
   val jsonSchemaGeneratorWithResources = new JsonSchemaGenerator(_objectMapperScala, JsonSchemaResources.setResources(properties), debug = true, vanillaJsonSchemaDraft4WithIds)
 
@@ -178,12 +171,9 @@ class JsonSchemaGeneratorTest extends FunSuite with Matchers {
 
 
   test("Generate scheme for @JsonUrl") {
-
     {
       val schema = jsonSchemaGeneratorWithResources.generateJsonSchema(classOf[ClassWithRelation]);
-      println("dentrooooooooooooooooooooo")
       println(schema)
-
     }
   }
 

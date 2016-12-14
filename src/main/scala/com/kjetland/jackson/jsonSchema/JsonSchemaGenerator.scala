@@ -1,7 +1,5 @@
 package com.kjetland.jackson.jsonSchema
 
-import java.lang.reflect.{Field, Method, ParameterizedType}
-import java.time._
 import java.util
 import java.util.Optional
 import javax.validation.constraints._
@@ -10,10 +8,9 @@ import scala.collection.JavaConverters._
 import com.fasterxml.jackson.annotation.{JsonPropertyDescription, JsonSubTypes, JsonTypeInfo}
 import com.fasterxml.jackson.core.JsonParser.NumberType
 import com.fasterxml.jackson.databind.jsonFormatVisitors._
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.databind.introspect.{AnnotatedClass, JacksonAnnotationIntrospector}
+import com.fasterxml.jackson.databind.introspect.{AnnotatedClass}
 import com.fasterxml.jackson.databind.node.{ArrayNode, JsonNodeFactory, ObjectNode}
 import com.kjetland.jackson.jsonSchema.annotations._
 import org.slf4j.LoggerFactory
@@ -105,7 +102,6 @@ object JsonSchemaConfig {
   )
 
 
-
   object JsonSchemaResources {
 
     val defaultResources = JsonSchemaResources(
@@ -113,8 +109,8 @@ object JsonSchemaConfig {
     )
 
     def setResources(
-                      properties: java.util.Map[String, Object]
-                    ): JsonSchemaResources = {
+        properties: java.util.Map[String, Object]
+      ): JsonSchemaResources = {
 
       import scala.collection.JavaConverters._
 
@@ -441,8 +437,26 @@ class JsonSchemaGenerator
 
       =
       {
+        if (propertyIsNotIgnored(currentProperty)) {
+          // Comprueba si se trata de una geometría, ya que inicialmente no conoce el formato pero se añade
+          // compatibilidad
+          expectGeometry(_type)
+
+          new JsonAnyFormatVisitor {
+          }
+        } else {
+          null
+        }
+      }
+
+
+      def expectGeometry(_type: JavaType)
+
+      =
+      {
         // Crea esquema para geometrías, haciendo compatible con vividsolutions
-        if (_type.getSuperClass.getRawClass.getName.equals("com.vividsolutions.jts.geom.Geometry")) {
+        if ((_type.getSuperClass.getRawClass.getName.equals("com.vividsolutions.jts.geom.Geometry"))
+          || (_type.getSuperClass.getRawClass.getSimpleName.equals("Geometry"))) {
 
           node.put("type", "object")
           node.put("additionalProperties", false)
@@ -470,30 +484,29 @@ class JsonSchemaGenerator
           propertiesNode.set("type", typeNode)
           propertiesNode.set("coordinates", coordinatesNode)
 
-          if (_type.getRawClass.getName().equals("com.vividsolutions.jts.geom.Point")) {
+          if ((_type.getRawClass.getName.equals("com.vividsolutions.jts.geom.Point")) ||
+            (_type.getRawClass.getSimpleName.equals("Point"))) {
             enumType.add("Point")
             coordinatesNode.put("minItems", 2)
             coordinatesNode.put("maxItems", 2)
-          } else if (_type.getRawClass.getName().equals("com.vividsolutions.jts.geom.LineString")) {
+          } else if ((_type.getRawClass.getName.equals("com.vividsolutions.jts.geom.LineString")) ||
+            (_type.getRawClass.getSimpleName.equals("LineString"))) {
             enumType.add("LineString")
             coordinatesNode.put("minItems", 2)
             coordinatesNode.put("maxItems", 3)
           }
-        }
-        else {
+        } else {
           if (!config.disableWarnings) {
             log.warn(s"Not able to generate jsonSchema-info for type: ${_type} - probably using custom serializer which does not override acceptJsonFormatVisitor")
           }
 
-        }
-        new JsonAnyFormatVisitor {
         }
       }
 
       override def expectIntegerFormat(_type: JavaType)
       =
       {
-        if (currentProperty.isEmpty || currentProperty.get.getAnnotation(classOf[JsonSchemaIgnore]) == null) {
+        if (propertyIsNotIgnored(currentProperty)) {
           l("expectIntegerFormat")
 
           node.put("type", "integer")
@@ -529,7 +542,8 @@ class JsonSchemaGenerator
             }
           }
         }
-        else { null
+        else {
+          null
         }
       }
 
@@ -543,10 +557,9 @@ class JsonSchemaGenerator
 
 
       override def expectBooleanFormat(_type: JavaType)
-
       =
       {
-        if (currentProperty.isEmpty || currentProperty.get.getAnnotation(classOf[JsonSchemaIgnore]) == null) {
+        if (propertyIsNotIgnored(currentProperty)) {
           l("expectBooleanFormat")
 
           node.put("type", "boolean")
@@ -576,7 +589,7 @@ class JsonSchemaGenerator
 
       =
       {
-        if (currentProperty.isEmpty || currentProperty.get.getAnnotation(classOf[JsonSchemaIgnore]) == null) {
+        if (propertyIsNotIgnored(currentProperty)) {
           l(s"expectMapFormat - _type: ${_type}")
 
           // There is no way to specify map in jsonSchema,
@@ -638,11 +651,9 @@ class JsonSchemaGenerator
 
             PolymorphismInfo(propertyName, subTypeName)
         }
-
       }
 
       override def expectObjectFormat(_type: JavaType)
-
       =
       {
 
@@ -739,15 +750,13 @@ class JsonSchemaGenerator
 
                   Some(new JsonObjectFormatVisitor with MySerializerProvider {
 
-
                     // Used when rendering schema using propertyOrdering as specified here:
                     // https://github.com/jdorn/json-editor#property-ordering
                     var nextPropertyOrderIndex = 1
 
                     def myPropertyHandler(propertyName: String, propertyType: JavaType, prop: Option[BeanProperty], jsonPropertyRequired: Boolean): Unit = {
 
-
-                      if (prop == None || prop.get.getAnnotation(classOf[JsonSchemaIgnore]) == null) {
+                      if (propertyIsNotIgnored(prop)) {
                         l(s"JsonObjectFormatVisitor - ${propertyName}: ${propertyType}")
                         if (propertiesNode.get(propertyName) != null) {
                           if (!config.disableWarnings) {
@@ -868,7 +877,6 @@ class JsonSchemaGenerator
                               thisPropertyNode.meta.put("title", title)
                           }
 
-
                         // Optionally add url
                         prop.flatMap {
                           p: BeanProperty =>
@@ -878,13 +886,22 @@ class JsonSchemaGenerator
                             thisPropertyNode.meta.put("type", "integer")
                             thisPropertyNode.meta.put("url", resources.properties.get(url).getOrElse("none"))
                             thisPropertyNode.meta.remove("$ref")
-                            definitionsHandler.getFinalDefinitionsNode().get.remove(propertyType.getRawClass.getSimpleName)
+                            removeDefinition(propertyType)
                         }
 
                       }
                       else {
-                        // Cuando se trata de un jsonSchemaIgnore si se ha metido un en definitions se elimina
-                        definitionsHandler.getFinalDefinitionsNode().get.remove(propertyType.getRawClass.getSimpleName)
+                        removeDefinition(propertyType)
+                      }
+                    }
+
+                    // Elimina la definición cuando se trata de una relación o se ha ignorado la propiedad
+                    def removeDefinition(propertyType: JavaType): Unit = {
+                      // Cuando se trata de un jsonSchemaIgnore si se ha metido un en definitions se elimina
+                      val definitionNode = definitionsHandler.getFinalDefinitionsNode().getOrElse(null)
+                      if (definitionNode != null) {
+                        definitionNode.remove(propertyType.getRawClass.getName)
+                        definitionNode.remove(propertyType.getRawClass.getSimpleName)
                       }
                     }
                     override def optionalProperty(prop: BeanProperty): Unit = {
@@ -925,6 +942,13 @@ class JsonSchemaGenerator
                 definitionInfo.jsonObjectFormatVisitor.orNull
               }
           }
+      }
+
+      // Comprueba si la propiedad debe ser ignorada por introducir etiqueta @JsonSchemaIgnore
+      def propertyIsNotIgnored(prop: Option[BeanProperty])
+      =
+      {
+        (prop.isEmpty || prop.get.getAnnotation(classOf[JsonSchemaIgnore]) == null)
       }
   }
 

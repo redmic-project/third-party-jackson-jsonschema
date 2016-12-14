@@ -455,8 +455,8 @@ class JsonSchemaGenerator
       =
       {
         // Crea esquema para geometrías, haciendo compatible con vividsolutions
-        if ((_type.getSuperClass.getRawClass.getName.equals("com.vividsolutions.jts.geom.Geometry"))
-          || (_type.getSuperClass.getRawClass.getSimpleName.equals("Geometry"))) {
+        val superClass = _type.getSuperClass
+        if (_type.getRawClass.getName.contains("vividsolutions")) {
 
           node.put("type", "object")
           node.put("additionalProperties", false)
@@ -484,13 +484,11 @@ class JsonSchemaGenerator
           propertiesNode.set("type", typeNode)
           propertiesNode.set("coordinates", coordinatesNode)
 
-          if ((_type.getRawClass.getName.equals("com.vividsolutions.jts.geom.Point")) ||
-            (_type.getRawClass.getSimpleName.equals("Point"))) {
+          if (_type.getRawClass.getName.contains("Point")) {
             enumType.add("Point")
             coordinatesNode.put("minItems", 2)
             coordinatesNode.put("maxItems", 2)
-          } else if ((_type.getRawClass.getName.equals("com.vividsolutions.jts.geom.LineString")) ||
-            (_type.getRawClass.getSimpleName.equals("LineString"))) {
+          } else if (_type.getRawClass.getName.contains("LineString")) {
             enumType.add("LineString")
             coordinatesNode.put("minItems", 2)
             coordinatesNode.put("maxItems", 3)

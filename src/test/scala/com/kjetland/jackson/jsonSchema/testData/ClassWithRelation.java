@@ -1,8 +1,14 @@
 package com.kjetland.jackson.jsonSchema.testData;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaUrl;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaIgnore;
 import com.vividsolutions.jts.geom.LineString;
+
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import java.util.List;
 
@@ -11,12 +17,15 @@ import java.util.List;
  */
 public class ClassWithRelation {
 
+    @NotNull
     private LineString geometry;
 
     private GeoJsonObjectTypes type;
 
+
     private Long id;
 
+    @Size(min=0, max=2)
     private String name;
 
     @JsonSchemaUrl(value="ACCESSIBILITY")

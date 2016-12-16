@@ -3,6 +3,7 @@ package com.kjetland.jackson.jsonSchema
 import java.util
 import java.util.Optional
 import javax.validation.constraints._
+import javax.annotation._
 
 import scala.collection.JavaConverters._
 import com.fasterxml.jackson.annotation.{JsonPropertyDescription, JsonSubTypes, JsonTypeInfo}
@@ -289,10 +290,11 @@ class JsonSchemaGenerator
 
       =
       {
-        if (currentProperty.isEmpty || currentProperty.get.getAnnotation(classOf[JsonSchemaIgnore]) == null) {
+        if (propertyIsNotIgnored(currentProperty)) {
           l(s"expectStringFormat - _type: ${_type}")
 
-          node.put("type", "string")
+          setType(node, currentProperty, "string")
+          //node.put("type", "string")
 
           // Check if we should include minLength and/or maxLength
           case class MinAndMaxLength(minLength: Option[Int], maxLength: Option[Int])
@@ -356,14 +358,17 @@ class JsonSchemaGenerator
       =
       {
 
-        if (currentProperty.isEmpty || currentProperty.get.getAnnotation(classOf[JsonSchemaIgnore]) == null) {
+        if (propertyIsNotIgnored(currentProperty)) {
           l(s"expectArrayFormat - _type: ${_type}")
 
-          node.put("type", "array")
+          setType(node, currentProperty, "array")
+          //node.put("type", "array")
 
           config.defaultArrayFormat.foreach {
             format => setFormat(node, format)
           }
+
+          node.put("uniqueItems", true)
 
           val itemsNode = JsonNodeFactory.instance.objectNode()
           node.set("items", itemsNode)
@@ -394,10 +399,11 @@ class JsonSchemaGenerator
 
       =
       {
-        if (currentProperty.isEmpty || currentProperty.get.getAnnotation(classOf[JsonSchemaIgnore]) == null) {
+        if (propertyIsNotIgnored(currentProperty)) {
           l("expectNumberFormat")
 
-          node.put("type", "number")
+          setType(node, currentProperty, "number")
+          //node.put("type", "number")
 
           // Look for @Min, @Max => minumum, maximum
           currentProperty.map {
@@ -458,7 +464,8 @@ class JsonSchemaGenerator
         val superClass = _type.getSuperClass
         if (_type.getRawClass.getName.contains("vividsolutions")) {
 
-          node.put("type", "object")
+          setType(node, currentProperty, "object")
+          //node.put("type", "object")
           node.put("additionalProperties", false)
 
           val propertiesNode = JsonNodeFactory.instance.objectNode()
@@ -507,7 +514,8 @@ class JsonSchemaGenerator
         if (propertyIsNotIgnored(currentProperty)) {
           l("expectIntegerFormat")
 
-          node.put("type", "integer")
+          setType(node, currentProperty, "integer")
+          //node.put("type", "integer")
 
           // Look for @Min, @Max => minumum, maximum
           currentProperty.map {
@@ -560,7 +568,8 @@ class JsonSchemaGenerator
         if (propertyIsNotIgnored(currentProperty)) {
           l("expectBooleanFormat")
 
-          node.put("type", "boolean")
+          setType(node, currentProperty, "boolean")
+          //node.put("type", "boolean")
 
           currentProperty.map {
             p =>
@@ -595,7 +604,8 @@ class JsonSchemaGenerator
           // so that it can hold whatever the map can hold
 
 
-          node.put("type", "object")
+          setType(node, currentProperty, "object")
+          //node.put("type", "object")
           node.put("additionalProperties", true)
 
 
@@ -881,7 +891,8 @@ class JsonSchemaGenerator
                             Option(p.getAnnotation(classOf[JsonSchemaUrl])).map(_.value())
                         }.map {
                           url =>
-                            thisPropertyNode.meta.put("type", "integer")
+                            setType(thisPropertyNode.meta, prop, "integer")
+                            //thisPropertyNode.meta.put("type", "integer")
                             thisPropertyNode.meta.put("url", resources.properties.get(url).getOrElse("none"))
                             thisPropertyNode.meta.remove("$ref")
                             removeDefinition(propertyType)
@@ -940,6 +951,27 @@ class JsonSchemaGenerator
                 definitionInfo.jsonObjectFormatVisitor.orNull
               }
           }
+      }
+
+      // Añade a la propiedad el tipo null en caso de que no tenga la etiqueta notNull
+      def setType(node: ObjectNode, prop: Option[BeanProperty], typePrimary: String)
+      =
+      {
+        if (propertyIsNullable(prop)) {
+          val types = JsonNodeFactory.instance.arrayNode()
+          types.add(typePrimary)
+          types.add("null")
+          node.set("type", types)
+        }
+        else
+          node.put("type", typePrimary)
+      }
+
+      // comprueba si el valor de la propiedad puede ser nulo (no tiene la etiqueta notNull)
+      def propertyIsNullable(prop: Option[BeanProperty])
+      =
+      {
+        (prop != null && !prop.isEmpty && prop.get.getAnnotation(classOf[NotNull]) == null)
       }
 
       // Comprueba si la propiedad debe ser ignorada por introducir etiqueta @JsonSchemaIgnore

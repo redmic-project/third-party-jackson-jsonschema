@@ -702,7 +702,7 @@ class JsonSchemaGenerator
                 thisObjectNode: ObjectNode =>
 
                   thisObjectNode.put("type", "object")
-                  thisObjectNode.put("additionalProperties", false)
+                  //thisObjectNode.put("additionalProperties", false)
 
                   // If class is annotated with JsonSchemaFormat, we should add it
                   val ac = AnnotatedClass.construct(_type, objectMapper.getDeserializationConfig())

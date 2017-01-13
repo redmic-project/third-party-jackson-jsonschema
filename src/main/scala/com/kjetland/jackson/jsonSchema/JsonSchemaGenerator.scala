@@ -885,6 +885,15 @@ class JsonSchemaGenerator
                               thisPropertyNode.meta.put("title", title)
                           }
 
+                        // Optionally add default
+                        prop.flatMap {
+                          p: BeanProperty =>
+                            Option(p.getAnnotation(classOf[JsonSchemaDefault])).map(_.value())
+                        }.map {
+                            defe =>
+                              thisPropertyNode.meta.put("default", defe)
+                          }
+
                         // Optionally add url
                         prop.flatMap {
                           p: BeanProperty =>

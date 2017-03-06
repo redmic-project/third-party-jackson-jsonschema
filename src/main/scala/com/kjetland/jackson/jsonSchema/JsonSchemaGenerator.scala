@@ -364,6 +364,9 @@ class JsonSchemaGenerator
           setType(node, currentProperty, "array")
           //node.put("type", "array")
 
+          if (propertyIsUniqueItemsByRequiredProperties(currentProperty))
+            node.put("uniqueItemsByRequiredProperties", true)
+
           config.defaultArrayFormat.foreach {
             format => setFormat(node, format)
           }
@@ -701,7 +704,7 @@ class JsonSchemaGenerator
               val objectBuilder: ObjectNode => Option[JsonObjectFormatVisitor] = {
                 thisObjectNode: ObjectNode =>
 
-                  thisObjectNode.put("type", "object")
+
                   //thisObjectNode.put("additionalProperties", false)
 
                   // If class is annotated with JsonSchemaFormat, we should add it
@@ -765,6 +768,9 @@ class JsonSchemaGenerator
                     def myPropertyHandler(propertyName: String, propertyType: JavaType, prop: Option[BeanProperty], jsonPropertyRequired: Boolean): Unit = {
 
                       if (propertyIsNotIgnored(prop)) {
+
+                        setType(thisObjectNode, prop, "object");
+
                         l(s"JsonObjectFormatVisitor - ${propertyName}: ${propertyType}")
                         if (propertiesNode.get(propertyName) != null) {
                           if (!config.disableWarnings) {
@@ -966,7 +972,7 @@ class JsonSchemaGenerator
       def setType(node: ObjectNode, prop: Option[BeanProperty], typePrimary: String)
       =
       {
-        if (propertyIsNullable(prop)) {
+        if (prop == null || propertyIsNullable(prop)) {
           val types = JsonNodeFactory.instance.arrayNode()
           types.add(typePrimary)
           types.add("null")
@@ -988,6 +994,13 @@ class JsonSchemaGenerator
       =
       {
         (prop.isEmpty || prop.get.getAnnotation(classOf[JsonSchemaIgnore]) == null)
+      }
+
+      // Comprueba si se debe añadir la propiedad uniqueItemsByRequiredProperties
+      def propertyIsUniqueItemsByRequiredProperties(prop: Option[BeanProperty])
+      =
+      {
+        (prop != null && !prop.isEmpty && prop.get.getAnnotation(classOf[JsonSchemaUniqueItemsByRequiredProperties]) != null)
       }
   }
 

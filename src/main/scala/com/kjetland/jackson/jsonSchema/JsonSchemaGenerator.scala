@@ -704,7 +704,7 @@ class JsonSchemaGenerator
               val objectBuilder: ObjectNode => Option[JsonObjectFormatVisitor] = {
                 thisObjectNode: ObjectNode =>
 
-
+                  //thisObjectNode.put("type", "object")
                   //thisObjectNode.put("additionalProperties", false)
 
                   // If class is annotated with JsonSchemaFormat, we should add it
@@ -712,6 +712,12 @@ class JsonSchemaGenerator
                   resolvePropertyFormat(_type, objectMapper).foreach {
                     format =>
                       setFormat(thisObjectNode, format)
+                  }
+
+                  if (ac.getAnnotation(classOf[JsonSchemaNotNull]) != null) {
+                    thisObjectNode.put("type", "object")
+                  } else {
+                    setType(thisObjectNode, null, "object")
                   }
 
                   // If class is annotated with JsonSchemaDescription, we should add it
@@ -768,8 +774,6 @@ class JsonSchemaGenerator
                     def myPropertyHandler(propertyName: String, propertyType: JavaType, prop: Option[BeanProperty], jsonPropertyRequired: Boolean): Unit = {
 
                       if (propertyIsNotIgnored(prop)) {
-
-                        setType(thisObjectNode, prop, "object");
 
                         l(s"JsonObjectFormatVisitor - ${propertyName}: ${propertyType}")
                         if (propertiesNode.get(propertyName) != null) {

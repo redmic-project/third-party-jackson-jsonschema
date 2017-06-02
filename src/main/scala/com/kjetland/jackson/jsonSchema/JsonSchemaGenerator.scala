@@ -367,6 +367,30 @@ class JsonSchemaGenerator
           if (propertyIsUniqueItemsByRequiredProperties(currentProperty))
             node.put("uniqueItemsByRequiredProperties", true)
 
+          // Añade Etiquetas de maxItems y minItems en función de @Size para arrays
+          // TODO: Pasar a una función para refactorizar con String
+          case class MinAndMaxSize(minSize: Option[Int], maxSize: Option[Int])
+
+          val minAndMaxSize: Option[MinAndMaxSize] = currentProperty.flatMap {
+
+            p =>
+              Option(p.getAnnotation(classOf[Size]))
+                .map {
+                  size =>
+                    (size.min(), size.max()) match {
+                      case (0, max) => MinAndMaxSize(None, Some(max))
+                      case (min, Integer.MAX_VALUE) => MinAndMaxSize(Some(min), None)
+                      case (min, max) => MinAndMaxSize(Some(min), Some(max))
+                    }
+                }
+          }
+
+          minAndMaxSize.map {
+            minAndMax: MinAndMaxSize =>
+              minAndMax.minSize.map(length => node.put("minItems", length))
+              minAndMax.maxSize.map(length => node.put("maxItems", length))
+          }
+          ////////////////////////////////
           config.defaultArrayFormat.foreach {
             format => setFormat(node, format)
           }

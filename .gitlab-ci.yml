@@ -7,14 +7,7 @@ variables:
 cache:
   paths:
     - .m2/repository/
-    - target/
-
-build:
-  stage: build
-  script:
-    - mvn $MAVEN_CLI_OPTS verify
 
 deploy:
-  stage: deploy
   script:
     - mvn $MAVEN_CLI_OPTS deploy

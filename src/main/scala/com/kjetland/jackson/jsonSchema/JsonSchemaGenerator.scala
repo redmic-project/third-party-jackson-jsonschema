@@ -509,24 +509,55 @@ class JsonSchemaGenerator
           val coordinatesNode = JsonNodeFactory.instance.objectNode()
           coordinatesNode.put("type", "array")
 
-          val itemsNode = JsonNodeFactory.instance.objectNode()
-          itemsNode.put("type", "number")
-          itemsNode.put("maximun", 9000000000000000L)
-          itemsNode.put("minimun", -9000000000000000L)
-          coordinatesNode.set("items", itemsNode)
+          //Esquema de Point
+          val itemsNodePoint = JsonNodeFactory.instance.objectNode()
+          itemsNodePoint.put("type", "number")
+          itemsNodePoint.put("maximun", 9000000000000000L)
+          itemsNodePoint.put("minimun", -9000000000000000L)
 
-          propertiesNode.set("type", typeNode)
-          propertiesNode.set("coordinates", coordinatesNode)
+          // Esquema de LineString
+          val itemsNodeLineString = JsonNodeFactory.instance.objectNode()
+          itemsNodeLineString.put("type", "array")
+          itemsNodeLineString.put("items", itemsNodePoint)
+          itemsNodeLineString.put("minItems", "2")
+
+          // Esquema de LineString para un polígono
+          val itemsNodeLinearRings = JsonNodeFactory.instance.objectNode()
+          itemsNodeLinearRings.put("type", "array")
+          itemsNodeLinearRings.put("items", itemsNodePoint)
+          itemsNodeLinearRings.put("minItems", "4")
+
+          // Esquema de Polygon
+          val itemsNodePolygon = JsonNodeFactory.instance.objectNode()
+          itemsNodePolygon.put("type", "array")
+          itemsNodePolygon.put("items", itemsNodeLinearRings)
+          itemsNodePolygon.put("minItems", "1")
 
           if (_type.getRawClass.getName.contains("Point")) {
             enumType.add("Point")
+            coordinatesNode.set("items", itemsNodePoint)
             coordinatesNode.put("minItems", 2)
             coordinatesNode.put("maxItems", 2)
+          } else if (_type.getRawClass.getName.contains("MultiLineString")) {
+            enumType.add("MultiLineString")
+            coordinatesNode.set("items", itemsNodeLineString)
+            coordinatesNode.put("minItems", 1)
           } else if (_type.getRawClass.getName.contains("LineString")) {
             enumType.add("LineString")
+            coordinatesNode.set("items", itemsNodeLineString)
             coordinatesNode.put("minItems", 2)
-            coordinatesNode.put("maxItems", 3)
+          } else if (_type.getRawClass.getName.contains("MultiPolygon")) {
+            enumType.add("MultiPolygon")
+            coordinatesNode.set("items", itemsNodePolygon)
+            coordinatesNode.put("minItems", 1)
+          } else if (_type.getRawClass.getName.contains("Polygon")) {
+            enumType.add("Polygon")
+            coordinatesNode.set("items", itemsNodeLinearRings)
+            coordinatesNode.put("minItems", 1)
           }
+
+          propertiesNode.set("type", typeNode)
+          propertiesNode.set("coordinates", coordinatesNode)
         } else {
           if (!config.disableWarnings) {
             log.warn(s"Not able to generate jsonSchema-info for type: ${_type} - probably using custom serializer which does not override acceptJsonFormatVisitor")

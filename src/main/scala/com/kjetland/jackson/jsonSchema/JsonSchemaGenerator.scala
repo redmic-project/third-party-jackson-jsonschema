@@ -509,33 +509,40 @@ class JsonSchemaGenerator
           val coordinatesNode = JsonNodeFactory.instance.objectNode()
           coordinatesNode.put("type", "array")
 
-          //Esquema de Point
+          //Esquema de Coordenada
+          val itemsNodeCoordinate = JsonNodeFactory.instance.objectNode()
+          itemsNodeCoordinate.put("type", "number")
+          itemsNodeCoordinate.put("maximum", 9000000000000000L)
+          itemsNodeCoordinate.put("minimum", -9000000000000000L)
+
+          //Esquema Point
           val itemsNodePoint = JsonNodeFactory.instance.objectNode()
-          itemsNodePoint.put("type", "number")
-          itemsNodePoint.put("maximun", 9000000000000000L)
-          itemsNodePoint.put("minimun", -9000000000000000L)
+          itemsNodePoint.put("type", "array")
+          itemsNodePoint.set("items", itemsNodeCoordinate)
+          itemsNodePoint.put("minItems", 2)
+          itemsNodePoint.put("maxItems", 2)
 
           // Esquema de LineString
           val itemsNodeLineString = JsonNodeFactory.instance.objectNode()
           itemsNodeLineString.put("type", "array")
           itemsNodeLineString.put("items", itemsNodePoint)
-          itemsNodeLineString.put("minItems", "2")
+          itemsNodeLineString.put("minItems", 2)
 
-          // Esquema de LineString para un polígono
+          // Esquema de LineRings para un polígono
           val itemsNodeLinearRings = JsonNodeFactory.instance.objectNode()
           itemsNodeLinearRings.put("type", "array")
           itemsNodeLinearRings.put("items", itemsNodePoint)
-          itemsNodeLinearRings.put("minItems", "4")
+          itemsNodeLinearRings.put("minItems", 4)
 
           // Esquema de Polygon
           val itemsNodePolygon = JsonNodeFactory.instance.objectNode()
           itemsNodePolygon.put("type", "array")
           itemsNodePolygon.put("items", itemsNodeLinearRings)
-          itemsNodePolygon.put("minItems", "1")
+          itemsNodePolygon.put("minItems", 1)
 
           if (_type.getRawClass.getName.contains("Point")) {
             enumType.add("Point")
-            coordinatesNode.set("items", itemsNodePoint)
+            coordinatesNode.set("items", itemsNodeCoordinate)
             coordinatesNode.put("minItems", 2)
             coordinatesNode.put("maxItems", 2)
           } else if (_type.getRawClass.getName.contains("MultiLineString")) {

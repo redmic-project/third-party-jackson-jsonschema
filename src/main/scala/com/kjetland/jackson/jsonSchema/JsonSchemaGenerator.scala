@@ -551,7 +551,7 @@ class JsonSchemaGenerator
             coordinatesNode.put("minItems", 1)
           } else if (_type.getRawClass.getName.contains("LineString")) {
             enumType.add("LineString")
-            coordinatesNode.set("items", itemsNodeLineString)
+            coordinatesNode.set("items", itemsNodePoint)
             coordinatesNode.put("minItems", 2)
           } else if (_type.getRawClass.getName.contains("MultiPolygon")) {
             enumType.add("MultiPolygon")

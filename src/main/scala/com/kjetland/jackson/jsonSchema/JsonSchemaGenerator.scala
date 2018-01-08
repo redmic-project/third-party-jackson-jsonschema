@@ -542,23 +542,33 @@ class JsonSchemaGenerator
 
           if (_type.getRawClass.getName.contains("Point")) {
             enumType.add("Point")
+            typeNode.put("default", "Point")
+
             coordinatesNode.set("items", itemsNodeCoordinate)
             coordinatesNode.put("minItems", 2)
             coordinatesNode.put("maxItems", 2)
           } else if (_type.getRawClass.getName.contains("MultiLineString")) {
             enumType.add("MultiLineString")
+            typeNode.put("default", "MultiLineString")
+
             coordinatesNode.set("items", itemsNodeLineString)
             coordinatesNode.put("minItems", 1)
           } else if (_type.getRawClass.getName.contains("LineString")) {
             enumType.add("LineString")
+            typeNode.put("default", "LineString")
+
             coordinatesNode.set("items", itemsNodePoint)
             coordinatesNode.put("minItems", 2)
           } else if (_type.getRawClass.getName.contains("MultiPolygon")) {
             enumType.add("MultiPolygon")
+            typeNode.put("default", "MultiPolygon")
+
             coordinatesNode.set("items", itemsNodePolygon)
             coordinatesNode.put("minItems", 1)
           } else if (_type.getRawClass.getName.contains("Polygon")) {
             enumType.add("Polygon")
+            typeNode.put("default", "Polygon")
+
             coordinatesNode.set("items", itemsNodeLinearRings)
             coordinatesNode.put("minItems", 1)
           }

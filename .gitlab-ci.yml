@@ -1,13 +1,20 @@
-image: redmic/maven-gitlab
+stages:
+  - build
 
-variables:
-  MAVEN_CLI_OPTS: "--batch-mode"
-  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
-
-cache:
-  paths:
-    - .m2/repository/
-
-deploy:
+maven-build:
+  stage: build
+  image: redmic/maven-gitlab
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  only:
+    - dev
+  cache:
+    paths:
+      - .m2/repository/
   script:
-    - mvn $MAVEN_CLI_OPTS deploy
+    - mvn deploy -B
+  artifacts:
+    name: "$CI_PROJECT_NAME"
+    expire_in: '6 months'
+    paths:
+      - target/*.jar

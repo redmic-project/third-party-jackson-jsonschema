@@ -7,6 +7,8 @@ maven-build:
   variables:
     MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
   only:
+    - branches
+  except:
     - master
   cache:
     paths:

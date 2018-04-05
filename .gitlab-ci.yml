@@ -12,6 +12,7 @@ maven-build:
     paths:
       - .m2/repository/
   script:
+    - sbt publish
     - mvn deploy -B
   artifacts:
     name: "$CI_PROJECT_NAME"

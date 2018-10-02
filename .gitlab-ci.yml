@@ -3,7 +3,7 @@ stages:
 
 maven-build:
   stage: build
-  image: redmic/maven-gitlab
+  image: registry.gitlab.com/redmic-project/docker/maven
   variables:
     MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
   only:

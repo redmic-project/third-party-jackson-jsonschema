@@ -45,8 +45,8 @@ lazy val commonSettings = Seq(
 )
 
 
-val jacksonVersion = "2.8.4"
-val jacksonModuleScalaVersion = "2.8.4"
+val jacksonVersion = "2.9.7"
+val jacksonModuleScalaVersion = "2.9.7"
 val slf4jVersion = "1.7.7"
 
 
@@ -61,9 +61,7 @@ lazy val deps  = Seq(
   "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonVersion % "test",
   "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion % "test",
   "joda-time" % "joda-time" % "2.9.4" % "test",
-  "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % jacksonVersion % "test",
-  "com.vividsolutions" % "jts" % "1.13" % "test",
-  "com.bedatadriven" % "jackson-datatype-jts" % "2.2" % "test"
+  "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % jacksonVersion % "test"
 )
 
 lazy val root = (project in file("."))

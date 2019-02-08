@@ -487,9 +487,9 @@ class JsonSchemaGenerator
 
       =
       {
-        // Crea esquema para geometrías, haciendo compatible con vividsolutions
+        // Crea esquema para geometrías, haciendo compatible con locationtech
         val superClass = _type.getSuperClass
-        if (_type.getRawClass.getName.contains("vividsolutions")) {
+        if (_type.getRawClass.getName.contains("locationtech")) {
 
           setType(node, currentProperty, "object")
           //node.put("type", "object")

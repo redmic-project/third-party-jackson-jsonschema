@@ -12,7 +12,7 @@
 	<groupId>es.redmic.lib</groupId>
 	<artifactId>jackson-jsonschema</artifactId>
 	<packaging>jar</packaging>
-	<version>0.7.0</version>
+	<version>0.7.0-feature-updateCI</version>
 	<name>Jackson JsonSchema</name>
 	<description>JsonSchema generator</description>
 	
@@ -28,9 +28,6 @@
 		
 		<!-- PLUGINS -->
 		<maven-scala-plugin.version>2.15.2</maven-scala-plugin.version>
-		
-		<!-- Environment variables -->
-		<env.MAVEN_REPO_URL>https://artifactory.redmic.net/artifactory</env.MAVEN_REPO_URL>
 	</properties>
 	
 	<dependencies>
@@ -52,19 +49,6 @@
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
 	</dependencies>
-	<distributionManagement>
-		<repository>
-			<id>central</id>
-			<name>redmic-releases</name>
-			<url>${env.MAVEN_REPO_URL}/libs-release-local</url>
-		</repository>
-		<snapshotRepository>
-			<id>snapshots</id>
-			<name>redmic-snapshots</name>
-			<url>${env.MAVEN_REPO_URL}/libs-snapshot-local</url>
-			<uniqueVersion>false</uniqueVersion>
-		</snapshotRepository>
-	</distributionManagement>
 	<build>
 		<plugins>
 			<plugin>

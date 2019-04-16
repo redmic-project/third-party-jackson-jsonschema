@@ -1,20 +1,11 @@
+include:
+  - project: 'redmic-project/gitlab-ci-templates'
+    ref: master
+    file: '/maven-building-library.yml'
+  - project: 'redmic-project/gitlab-ci-templates'
+    ref: master
+    file: '/license-listing.yml'
+
 stages:
   - build
-
-maven-build:
-  stage: build
-  image: registry.gitlab.com/redmic-project/docker/maven
-  variables:
-    MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
-  only:
-    - branches
-  cache:
-    paths:
-      - .m2/repository/
-  script:
-    - mvn deploy -B
-  artifacts:
-    name: "$CI_PROJECT_NAME"
-    expire_in: '6 months'
-    paths:
-      - target/*.jar
+  - license-list

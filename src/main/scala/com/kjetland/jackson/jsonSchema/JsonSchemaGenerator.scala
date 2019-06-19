@@ -982,7 +982,7 @@ class JsonSchemaGenerator
                             Option(p.getAnnotation(classOf[JsonSchemaUrl])).map(_.value())
                         }.map {
                           url =>
-                            setType(thisPropertyNode.meta, prop, "integer")
+                            setType(thisPropertyNode.meta, prop, "string")
                             //thisPropertyNode.meta.put("type", "integer")
                             thisPropertyNode.meta.put("url", resources.properties.get(url).getOrElse("none"))
                             thisPropertyNode.meta.remove("$ref")

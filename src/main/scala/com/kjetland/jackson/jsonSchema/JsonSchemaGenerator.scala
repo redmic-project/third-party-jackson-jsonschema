@@ -982,8 +982,20 @@ class JsonSchemaGenerator
                             Option(p.getAnnotation(classOf[JsonSchemaUrl])).map(_.value())
                         }.map {
                           url =>
-                            setType(thisPropertyNode.meta, prop, "string")
+                            setType(thisPropertyNode.meta, prop, "integer")
                             //thisPropertyNode.meta.put("type", "integer")
+                            thisPropertyNode.meta.put("url", resources.properties.get(url).getOrElse("none"))
+                            thisPropertyNode.meta.remove("$ref")
+                            removeDefinition(propertyType)
+                        }
+
+                        // Optionally add url uuid
+                        prop.flatMap {
+                          p: BeanProperty =>
+                            Option(p.getAnnotation(classOf[JsonSchemaUrlUuid])).map(_.value())
+                        }.map {
+                          url =>
+                            setType(thisPropertyNode.meta, prop, "string")
                             thisPropertyNode.meta.put("url", resources.properties.get(url).getOrElse("none"))
                             thisPropertyNode.meta.remove("$ref")
                             removeDefinition(propertyType)
